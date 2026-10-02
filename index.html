@@ -83,17 +83,17 @@
       </article>
       <article class="feature">
         <div class="copy">
-          <h3>Ask SGVue</h3>
-          <p>An assistant that can look but never touch: ask how many doors are on L2, or which walls have no fire rating, and it answers from the file. It uses your own Anthropic API key.</p>
+          <h3>Ask Vee</h3>
+          <p>Vee is an assistant that can look but never touch: ask how many doors are on L2, or which walls have no fire rating, and it answers from the file, showing what it read and checked on the way. It uses your own Anthropic API key.</p>
         </div>
-        <figure class="shot"><img src="img/ask.webp" width="1280" height="800" loading="lazy" decoding="async" alt="The Ask SGVue panel over the 3D view, with its opening summary of the model and suggestion chips such as “Check ARC against STR”."></figure>
+        <figure class="shot"><img src="img/ask.webp" width="1280" height="800" loading="lazy" decoding="async" alt="The Ask Vee panel over the 3D view: the question “Which walls have no thermal transmittance?” and the answer, 24 of 80 walls, with a row of squares counting them on each level."></figure>
       </article>
       <article class="feature">
         <div class="copy">
           <h3>Sections with cut lines</h3>
-          <p>Cut along any gridline or level. Everything the plane passes through is outlined in a thick accent line, so the cut reads at a glance.</p>
+          <p>Cut along any gridline or level — or both at once, each with its own offset. Everything a plane passes through is outlined in a thick accent line, so the cut reads at a glance.</p>
         </div>
-        <figure class="shot"><img src="img/section.webp" width="1280" height="800" loading="lazy" decoding="async" alt="A level section through the demo building seen in 3D: walls, columns and the stair cut by the plane are outlined in a thick teal line."></figure>
+        <figure class="shot"><img src="img/section.webp" width="1280" height="800" loading="lazy" decoding="async" alt="The Section card with a gridline cut and a level cut switched on together, beside the demo building in 3D: everything the two planes pass through is outlined in a thick teal line."></figure>
       </article>
       <article class="feature">
         <div class="copy">
@@ -106,10 +106,23 @@
         <span class="badge" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 5 6v5.5c0 4.3 3 7.9 7 9.5 4-1.6 7-5.2 7-9.5V6z"/><path d="M9 12l2.2 2.2L15.5 10"/></svg></span>
         <div>
           <h3>Read-only and private</h3>
-          <p>SGVue only ever reads your IFC files: nothing is written into them and nothing is uploaded. Ask SGVue is optional — when you use it, your question and what it reads to answer go to Anthropic under your own key.</p>
+          <p>SGVue only ever reads your IFC files: nothing is written into them and nothing is uploaded. Ask Vee is optional — when you use it, your question and what it reads to answer go to Anthropic under your own key. When SGVue starts, it asks GitHub once which version is the newest: an ordinary web request, so GitHub sees your IP address and which SGVue version is asking, and nothing from your files or models.</p>
         </div>
       </article>
     </div>
+  </section>
+
+  <section aria-labelledby="needs">
+    <p class="eyebrow">System requirements</p>
+    <h2 id="needs">What it needs to run.</h2>
+    <dl class="specs">
+      <div class="spec"><dt>System</dt><dd>Windows 10 or 11, 64-bit.</dd></div>
+      <div class="spec"><dt>Memory</dt><dd>8 GB works for IFC files up to about 100 MB. 16 GB is recommended for 200 MB files, or for several models together.</dd></div>
+      <div class="spec"><dt>Graphics</dt><dd>Any graphics card with WebGL2 — every PC of the last several years has one. On a PC with an NVIDIA card, SGVue uses it automatically.</dd></div>
+      <div class="spec"><dt>Files</dt><dd>IFC, as <span class="kbd">.ifc</span> or <span class="kbd">.ifczip</span>. It is built for typical files of 50–200 MB; a single file larger than 600 MB is not opened.</dd></div>
+      <div class="spec"><dt>Disk</dt><dd>About 110 MB to download, and about 390 MB once installed.</dd></div>
+      <div class="spec"><dt>Internet</dt><dd>Not needed to view models. Two things use it: a check for a newer version when SGVue starts, which sends nothing about your files or models, and Ask Vee — only if you set it up with your own Anthropic API key.</dd></div>
+    </dl>
   </section>
 
   <section aria-labelledby="install">
@@ -119,7 +132,7 @@
       <li class="step"><span class="n">1</span><div><h3>Download</h3><p>Get the setup file with the <strong>Download for Windows</strong> button above.</p></div></li>
       <li class="step"><span class="n">2</span><div><h3>Run it</h3><p>SGVue is not code-signed yet, so Windows may say <strong>Windows protected your PC</strong>. Choose <strong>More info</strong>, then <strong>Run anyway</strong>.</p></div></li>
       <li class="step"><span class="n">3</span><div><h3>Install, update or repair</h3><p>The setup wizard tells you which it will do. Updating keeps your settings, API key, recent files and saved views.</p></div></li>
-      <li class="step"><span class="n">4</span><div><h3>Stay current</h3><p>In SGVue, <span class="kbd">Help › Check for updates</span> shows you the newest version.</p></div></li>
+      <li class="step"><span class="n">4</span><div><h3>Stay current</h3><p>SGVue’s start page — where you open models — tells you when a newer version is out. <span class="kbd">Help › Check for updates</span> opens this page, which says whether you are up to date.</p></div></li>
     </ol>
   </section>
 </main>
