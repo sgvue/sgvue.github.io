@@ -6,7 +6,7 @@
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'; font-src 'self'; connect-src https://api.github.com; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
 <title>SGVue — read-only IFC viewer for BIM coordination review</title>
-<meta name="description" content="SGVue is a read-only IFC viewer for Windows. Open a federation, walk its storeys and grids, cut sections, build schedules and ask questions. Your models stay on your computer.">
+<meta name="description" content="SGVue is a read-only IFC viewer for Windows. Open several models as one federation, walk the storeys and grids, cut sections, build schedules and ask questions. Your models stay on your computer.">
 <meta name="author" content="Yong Yen">
 <meta name="theme-color" content="#F4F7F6" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#0F1516" media="(prefers-color-scheme: dark)">
@@ -15,7 +15,7 @@
 <meta property="og:site_name" content="SGVue">
 <meta property="og:url" content="https://sgvue.github.io/">
 <meta property="og:title" content="SGVue — read-only IFC viewer for BIM coordination review">
-<meta property="og:description" content="Open a federation, walk its storeys and grids, cut sections, build schedules and ask questions. Your models stay on your computer.">
+<meta property="og:description" content="Open several models as one federation, walk the storeys and grids, cut sections, build schedules and ask questions. Your models stay on your computer.">
 <meta property="og:image" content="https://sgvue.github.io/img/og.jpg">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
@@ -26,121 +26,599 @@
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="preload" href="fonts/ibm-plex-sans-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="fonts/ibm-plex-serif-latin-600-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="fonts/ibm-plex-serif-latin-600-italic.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="site.css">
-<script src="site.js"></script>
+<script src="theme.js"></script>
+<script defer src="shots.js"></script>
+<script defer src="site.js"></script>
+<script defer src="scrub.js"></script>
+<script defer src="vee.js"></script>
+<script defer src="replay.js"></script>
 </head>
-<body>
+<body id="top">
+<svg class="defs" width="0" height="0" aria-hidden="true" focusable="false">
+  <symbol id="i-tri" viewBox="0 0 10 9"><path d="M1 1h8L5 8z" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/></symbol>
+  <symbol id="i-dl" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11"/><path d="M7.5 10.5 12 15l4.5-4.5"/><path d="M4 15v3.5A1.5 1.5 0 0 0 5.5 20h13a1.5 1.5 0 0 0 1.5-1.5V15"/></g></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 13l4.5 4.5L19 7" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-copy" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="8.5" y="8.5" width="11" height="11" rx="2"/><path d="M15.5 5.5v-1a1 1 0 0 0-1-1h-9a1 1 0 0 0-1 1v9a1 1 0 0 0 1 1h1"/></g></symbol>
+  <symbol id="i-play" viewBox="0 0 24 24"><path d="M8 5.5v13l10.5-6.5z" fill="currentColor"/></symbol>
+  <symbol id="i-pause" viewBox="0 0 24 24"><path d="M7.5 5.5h3v13h-3zM13.5 5.5h3v13h-3z" fill="currentColor"/></symbol>
+  <symbol id="i-prev" viewBox="0 0 24 24"><path d="M17.5 6v12L9 12zM6.5 6h2v12h-2z" fill="currentColor"/></symbol>
+  <symbol id="i-next" viewBox="0 0 24 24"><path d="M6.5 6v12l8.5-6zM15.5 6h2v12h-2z" fill="currentColor"/></symbol>
+  <symbol id="i-reply" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6 4 11l5 5"/><path d="M4 11h10a6 6 0 0 1 6 6v1"/></g></symbol>
+  <symbol id="i-send" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M13 6l6 6-6 6"/></g></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M5 5l14 14M19 5 5 19" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></symbol>
+</svg>
+
+<a class="skip" href="#main">Skip to content</a>
 <div class="backdrop" aria-hidden="true"><div class="plane"></div><div class="glow"></div><div class="fade"></div></div>
 
-<header class="top wrap">
-  <button class="theme" id="theme" type="button" aria-label="Switch theme">
-    <svg class="sun" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M18.7 5.3l-1.6 1.6M6.9 17.1l-1.6 1.6"/></svg>
-    <svg class="moon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5z"/></svg>
-  </button>
+<header class="bar">
+  <div class="bar-in">
+    <a class="lockup" href="#top" aria-label="SGVue, top of the page">
+      <svg class="mark" width="30" height="30" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path class="o" d="M12 2.6 20.2 7.3v9.4L12 21.4 3.8 16.7V7.3z" stroke-width="1.3" stroke-linejoin="round"/><path class="o" d="M12 3.4v8.2" stroke-width="1.3" stroke-linecap="round"/><path class="v" d="M3.8 7.3 12 21.4 20.2 7.3" stroke-width="2.3" stroke-linejoin="round" stroke-linecap="round"/></svg>
+      <span><span class="word">SGVue</span><span class="kind">IFC model review</span></span>
+    </a>
+    <span class="bar-gap"></span>
+    <span class="bar-rel" data-release aria-hidden="true"></span>
+    <a class="btn btn-s bar-dl" data-download href="https://github.com/sgvue/releases/releases/latest">
+      <svg width="16" height="16" aria-hidden="true"><use href="#i-dl"/></svg>
+      <span>Download<span class="bar-dl-os"> for <span data-dl-os>Windows</span><span class="bar-dl-chip" data-dl-chip></span></span></span>
+    </a>
+    <button class="theme" id="theme" type="button" aria-label="Switch theme">
+      <svg class="sun" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M18.7 5.3l-1.6 1.6M6.9 17.1l-1.6 1.6"/></svg>
+      <svg class="moon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5z"/></svg>
+    </button>
+  </div>
 </header>
 
-<main class="wrap">
-  <div class="banner" id="update" role="status" aria-live="polite" hidden></div>
-
-  <section class="hero" aria-labelledby="title">
-    <div class="lockup">
-      <svg class="mark" width="34" height="34" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path class="o" d="M12 2.6 20.2 7.3v9.4L12 21.4 3.8 16.7V7.3z" stroke-width="1.3" stroke-linejoin="round"/><path class="o" d="M12 3.4v8.2" stroke-width="1.3" stroke-linecap="round"/><path class="v" d="M3.8 7.3 12 21.4 20.2 7.3" stroke-width="2.3" stroke-linejoin="round" stroke-linecap="round"/></svg>
-      <span><span class="word">SGVue</span><span class="kind">IFC model review</span></span>
-    </div>
-    <h1 id="title">Review IFC models without changing a thing.</h1>
-    <p class="lede">A read-only IFC viewer for BIM coordination review. Open a federation, walk its storeys and grids, cut sections, build schedules and ask questions — your models stay on your computer.</p>
-    <div class="cta">
-      <a class="btn" data-download href="https://github.com/sgvue/releases/releases/latest">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11"/><path d="M7.5 10.5 12 15l4.5-4.5"/><path d="M4 15v3.5A1.5 1.5 0 0 0 5.5 20h13a1.5 1.5 0 0 0 1.5-1.5V15"/></svg>
-        Download for Windows
-      </a>
-      <a class="link" href="https://github.com/sgvue/releases/releases">All releases →</a>
-    </div>
-    <p class="meta"><span data-release></span><span>Windows 10/11, 64-bit</span></p>
-  </section>
-
-  <figure class="shot hero-shot">
-    <img src="img/hero.webp" srcset="img/hero-1080.webp 1080w, img/hero.webp 2160w" sizes="(min-width: 1112px) 1048px, (min-width: 720px) calc(100vw - 64px), calc(100vw - 32px)" width="2160" height="1350" fetchpriority="high" alt="SGVue showing the demo building: four storeys among trees, with lettered and numbered grid bubbles and 6 000 mm grid dimensions. A wall is selected and its IFC properties are open on the right; the sidebar lists four models and six storeys.">
-  </figure>
-
-  <section aria-labelledby="what">
-    <p class="eyebrow">What it does</p>
-    <h2 id="what">Look closely, change nothing.</h2>
-    <div class="features">
-      <article class="feature">
-        <div class="copy">
-          <h3>One federation, every storey and grid</h3>
-          <p>Open several IFC files together and review them as one model. Walk the storeys and gridlines, and filter by any property to highlight, hide or isolate what matters.</p>
-        </div>
-        <figure class="shot"><img src="img/federation.webp" width="1280" height="799" loading="lazy" decoding="async" alt="The Filter card highlighting all 55 windows in teal across the federation, beside the sidebar's four models and their storeys."></figure>
-      </article>
-      <article class="feature">
-        <div class="copy">
-          <h3>Schedules</h3>
-          <p>Revit-style schedules of any IFC class, in a window of their own. Click a row to see it in 3D, and export to Excel when you are done.</p>
-        </div>
-        <figure class="shot"><img src="img/schedules.webp" width="1280" height="799" loading="lazy" decoding="async" alt="The Schedules window: a Window Schedule of 55 windows with model, level, type, area and glazing columns, one row selected."></figure>
-      </article>
-      <article class="feature">
-        <div class="copy">
-          <h3>Ask Vee</h3>
-          <p>Vee is an assistant that can look but never touch: ask how many doors are on L2, or which walls have no fire rating, and it answers from the file, showing what it read and checked on the way. It uses your own Anthropic API key.</p>
-        </div>
-        <figure class="shot"><img src="img/ask.webp" width="1280" height="800" loading="lazy" decoding="async" alt="The Ask Vee panel over the 3D view: the question “Which walls have no thermal transmittance?” and the answer, 24 of 80 walls, with a row of squares counting them on each level."></figure>
-      </article>
-      <article class="feature">
-        <div class="copy">
-          <h3>Sections with cut lines</h3>
-          <p>Cut along any gridline or level — or both at once, each with its own offset. Everything a plane passes through is outlined in a thick accent line, so the cut reads at a glance.</p>
-        </div>
-        <figure class="shot"><img src="img/section.webp" width="1280" height="800" loading="lazy" decoding="async" alt="The Section card with a gridline cut and a level cut switched on together, beside the demo building in 3D: everything the two planes pass through is outlined in a thick teal line."></figure>
-      </article>
-      <article class="feature">
-        <div class="copy">
-          <h3>Spot levels</h3>
-          <p>With the spot tool (C), click a surface to pin its level, like ▽ +14.500. Click the tag for the full E, N and Z.</p>
-        </div>
-        <figure class="shot"><img src="img/spot.webp" width="1280" height="800" loading="lazy" decoding="async" alt="A spot level tag reading ▽ +14.500 pinned on the roof of the demo building."></figure>
-      </article>
-      <article class="private">
-        <span class="badge" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 5 6v5.5c0 4.3 3 7.9 7 9.5 4-1.6 7-5.2 7-9.5V6z"/><path d="M9 12l2.2 2.2L15.5 10"/></svg></span>
-        <div>
-          <h3>Read-only and private</h3>
-          <p>SGVue only ever reads your IFC files: nothing is written into them and nothing is uploaded. Ask Vee is optional — when you use it, your question and what it reads to answer go to Anthropic under your own key. When SGVue starts, it asks GitHub once which version is the newest: an ordinary web request, so GitHub sees your IP address and which SGVue version is asking, and nothing from your files or models.</p>
-        </div>
-      </article>
-    </div>
-  </section>
-
-  <section aria-labelledby="needs">
-    <p class="eyebrow">System requirements</p>
-    <h2 id="needs">What it needs to run.</h2>
-    <dl class="specs">
-      <div class="spec"><dt>System</dt><dd>Windows 10 or 11, 64-bit.</dd></div>
-      <div class="spec"><dt>Memory</dt><dd>8 GB works for IFC files up to about 100 MB. 16 GB is recommended for 200 MB files, or for several models together.</dd></div>
-      <div class="spec"><dt>Graphics</dt><dd>Any graphics card with WebGL2 — every PC of the last several years has one. On a PC with an NVIDIA card, SGVue uses it automatically.</dd></div>
-      <div class="spec"><dt>Files</dt><dd>IFC, as <span class="kbd">.ifc</span> or <span class="kbd">.ifczip</span>. It is built for typical files of 50–200 MB; a single file larger than 600 MB is not opened.</dd></div>
-      <div class="spec"><dt>Disk</dt><dd>About 110 MB to download, and about 390 MB once installed.</dd></div>
-      <div class="spec"><dt>Internet</dt><dd>Not needed to view models. Two things use it: a check for a newer version when SGVue starts, which sends nothing about your files or models, and Ask Vee — only if you set it up with your own Anthropic API key.</dd></div>
-    </dl>
-  </section>
-
-  <section aria-labelledby="install">
-    <p class="eyebrow">Install and update</p>
-    <h2 id="install">Install once, update in place.</h2>
-    <ol class="steps">
-      <li class="step"><span class="n">1</span><div><h3>Download</h3><p>Get the setup file with the <strong>Download for Windows</strong> button above.</p></div></li>
-      <li class="step"><span class="n">2</span><div><h3>Run it</h3><p>SGVue is not code-signed yet, so Windows may say <strong>Windows protected your PC</strong>. Choose <strong>More info</strong>, then <strong>Run anyway</strong>.</p></div></li>
-      <li class="step"><span class="n">3</span><div><h3>Install, update or repair</h3><p>The setup wizard tells you which it will do. Updating keeps your settings, API key, recent files and saved views.</p></div></li>
-      <li class="step"><span class="n">4</span><div><h3>Stay current</h3><p>SGVue’s start page — where you open models — tells you when a newer version is out. <span class="kbd">Help › Check for updates</span> opens this page, which says whether you are up to date.</p></div></li>
+<div class="sheet">
+  <nav class="ladder" aria-label="On this page">
+    <p class="ladder-h" aria-hidden="true">Storeys<span class="ladder-u">px</span></p>
+    <ol id="ladder">
+      <li><a href="#top"><svg class="tri" width="10" height="9" aria-hidden="true"><use href="#i-tri"/></svg><span>Download</span><span class="ladder-e" data-elev="hero" aria-hidden="true"></span></a></li>
+      <li><a href="#tour"><svg class="tri" width="10" height="9" aria-hidden="true"><use href="#i-tri"/></svg><span>What it does</span><span class="ladder-e" data-elev="tour" aria-hidden="true"></span></a></li>
+      <li><a href="#vee"><svg class="tri" width="10" height="9" aria-hidden="true"><use href="#i-tri"/></svg><span>Meet Vee</span><span class="ladder-e" data-elev="vee" aria-hidden="true"></span></a></li>
+      <li><a href="#private"><svg class="tri" width="10" height="9" aria-hidden="true"><use href="#i-tri"/></svg><span>Private</span><span class="ladder-e" data-elev="private" aria-hidden="true"></span></a></li>
+      <li><a href="#needs"><svg class="tri" width="10" height="9" aria-hidden="true"><use href="#i-tri"/></svg><span>Requirements</span><span class="ladder-e" data-elev="needs" aria-hidden="true"></span></a></li>
+      <li><a href="#install"><svg class="tri" width="10" height="9" aria-hidden="true"><use href="#i-tri"/></svg><span>Install</span><span class="ladder-e" data-elev="install" aria-hidden="true"></span></a></li>
+      <li><a href="#new"><svg class="tri" width="10" height="9" aria-hidden="true"><use href="#i-tri"/></svg><span>What’s new</span><span class="ladder-e" data-elev="new" aria-hidden="true"></span></a></li>
+      <li><a href="#faq"><svg class="tri" width="10" height="9" aria-hidden="true"><use href="#i-tri"/></svg><span>Questions</span><span class="ladder-e" data-elev="faq" aria-hidden="true"></span></a></li>
     </ol>
-  </section>
-</main>
+    <p class="ladder-note" aria-hidden="true">Drawn at 1&#8239;:&#8239;1. Every dimension on this sheet is measured live, in pixels.</p>
+  </nav>
 
-<footer class="foot wrap">
-  <div class="foot-line">
-    <p>Made by Yong Yen, an architectural professional — built with Claude.</p>
-    <p><a href="https://github.com/sgvue/releases/releases">Releases</a> · Fonts: IBM Plex, <a href="fonts/OFL.txt">SIL Open Font License</a> · No cookies, no tracking.</p>
+  <main id="main">
+    <div class="banner" id="update" role="status" aria-live="polite" hidden></div>
+
+    <!-- ─────────────── 01 · the hero: download, and scrub the section ─────────────── -->
+    <section class="hero" id="hero" data-level aria-labelledby="title">
+      <div class="lvl lvl-top">
+        <p class="lvl-tag" aria-hidden="true"><svg class="tri" width="10" height="9"><use href="#i-tri"/></svg><b>01</b><span data-elev="hero">±0</span></p>
+      </div>
+      <div class="hero-head">
+        <h1 id="title">Review IFC models <em>without changing a thing.</em></h1>
+        <div class="hero-side">
+          <p class="lede">SGVue is a read-only IFC viewer for BIM coordination review. Open several models as one federation, walk the storeys and grids, cut sections, build schedules and ask questions in plain words. Your models stay on your computer.</p>
+          <!-- Without JavaScript, or without an answer from GitHub, the button is a plain link to the
+               latest release's page (all its files). With both, site.js points it at the one file
+               for this computer, or puts a note in its place (dl-note). -->
+          <div class="cta" id="cta">
+            <a class="btn" data-download href="https://github.com/sgvue/releases/releases/latest">
+              <svg width="18" height="18" aria-hidden="true"><use href="#i-dl"/></svg>
+              <span data-dl-label>Download for Windows</span>
+            </a>
+            <a class="link" href="https://github.com/sgvue/releases/releases">All releases →</a>
+          </div>
+          <p class="dl-note" id="dl-note" hidden></p>
+          <p class="dl-sub" id="dl-sub" hidden></p>
+          <p class="meta" id="dl-meta"><span data-release></span><span data-req-line>Windows 10 or 11, <span class="nb">64-bit</span></span><span>free, no account</span></p>
+        </div>
+      </div>
+
+      <figure class="scrub" id="scrub">
+        <div class="stage">
+          <!-- The first frame of the flipbook (shots.js `start`): a capture of SGVue's 3D canvas alone. -->
+          <picture>
+            <img id="cut-img" src="img/cut/dark/z15700-1280.webp" srcset="img/cut/dark/z15700-640.webp 640w, img/cut/dark/z15700-1280.webp 1280w" sizes="(min-width: 1344px) 898px, (min-width: 1200px) calc(100vw - 446px), (min-width: 720px) calc(100vw - 230px), 50vw" width="1280" height="800" fetchpriority="high" alt="The demo building in SGVue’s 3D view: four storeys among trees, with grid bubbles A to E and 1 to 4 and a 6 000 mm dimension between neighbouring gridlines. A section plane, outlined in teal, stands just above the roof and cuts nothing yet.">
+          </picture>
+          <span class="stage-tag" aria-hidden="true">3D · demo building</span>
+        </div>
+
+        <p class="dim" aria-hidden="true"><b data-measure="stage"></b></p>
+
+        <div class="cut-ladder" id="cut-ladder" hidden>
+          <input class="cut-range" id="cut-range" type="range" min="0" max="31" step="1" value="31" aria-label="Height of the section cut">
+          <span class="cut-rail" aria-hidden="true"></span>
+          <span class="cut-ticks" id="cut-ticks" aria-hidden="true"></span>
+          <span class="cut-handle" id="cut-handle" aria-hidden="true">
+            <span class="cut-knob"><svg width="12" height="11"><use href="#i-tri"/></svg></span>
+            <span class="cut-read" id="cut-read"></span>
+          </span>
+        </div>
+
+        <div class="cut-card" id="cut-card" role="group" aria-label="Section at a level" hidden>
+          <span class="cut-h">At a level</span>
+          <span class="chips" id="cut-chips"></span>
+          <span class="nudge">
+            <button type="button" id="cut-down" aria-label="Lower the cut by 500 millimetres">−500</button>
+            <output id="cut-off" for="cut-range" aria-label="Offset in millimetres">1&#8201;200</output>
+            <button type="button" id="cut-up" aria-label="Raise the cut by 500 millimetres">+500</button>
+          </span>
+          <span class="cut-sum" id="cut-sum">offset mm · level Roof · cut</span>
+        </div>
+
+        <figcaption class="cap">
+          <span class="bubble" aria-hidden="true">1</span>
+          <span class="js-only"><strong>Scrub the section.</strong> Drag the cut through the demo building, or step it with the buttons: a level cut, labelled the way SGVue’s Section card labels it. Everything the plane passes through is outlined in a thick accent line.</span>
+          <span class="nojs-only"><strong>The demo building in SGVue’s 3D view.</strong> With JavaScript on, this picture becomes a section cut you can move through the storeys.</span>
+        </figcaption>
+      </figure>
+
+      <nav class="jump" aria-label="On this page">
+        <a href="#tour"><svg class="tri" width="10" height="9" aria-hidden="true"><use href="#i-tri"/></svg>What it does</a>
+        <a href="#vee"><svg class="tri" width="10" height="9" aria-hidden="true"><use href="#i-tri"/></svg>Meet Vee</a>
+        <a href="#private"><svg class="tri" width="10" height="9" aria-hidden="true"><use href="#i-tri"/></svg>Private</a>
+        <a href="#needs"><svg class="tri" width="10" height="9" aria-hidden="true"><use href="#i-tri"/></svg>Requirements</a>
+        <a href="#install"><svg class="tri" width="10" height="9" aria-hidden="true"><use href="#i-tri"/></svg>Install</a>
+        <a href="#new"><svg class="tri" width="10" height="9" aria-hidden="true"><use href="#i-tri"/></svg>What’s new</a>
+        <a href="#faq"><svg class="tri" width="10" height="9" aria-hidden="true"><use href="#i-tri"/></svg>Questions</a>
+      </nav>
+    </section>
+
+    <!-- ─────────────── 02 · the tour ─────────────── -->
+    <section class="sec" id="tour" data-level aria-labelledby="h-tour">
+      <header class="lvl">
+        <p class="lvl-tag" aria-hidden="true"><svg class="tri" width="10" height="9"><use href="#i-tri"/></svg><b>02</b><span data-elev="tour"></span></p>
+        <p class="eyebrow">What it does</p>
+        <h2 id="h-tour">Look closely, change nothing.</h2>
+        <p class="sub">Eight things a reviewer does all day. Every picture is SGVue itself, on its built-in demo building.</p>
+      </header>
+
+      <div class="tour" id="tour-root">
+        <ol class="feats">
+          <li class="feat" id="t-federation" data-name="Federation">
+            <div class="feat-copy">
+              <span class="bubble" aria-hidden="true">A</span>
+              <h3>Several models, one federation</h3>
+              <p>Open the architecture, structure, services and site files together and review them as one model. Each keeps its own eye, colour and element count; activate one and the others fade to grey.</p>
+              <p class="spec"><span>.ifc</span><span>.ifczip</span><span>IFC2X3</span><span>IFC4</span><span>IFC4.3</span></p>
+            </div>
+            <figure class="feat-shot shot"><img src="img/tour-federation.webp" width="1280" height="800" loading="lazy" decoding="async" alt="SGVue’s sidebar on the demo building: four models with their element counts — SB_ARC_R25 140, SB_STR_R25 244, SB_SIT_R25 20, SB_MEP_R25 8. The architecture model is activated, so the 3D view draws its walls and windows in full and the other three models ghosted."></figure>
+          </li>
+          <li class="feat" id="t-grids" data-name="Storeys and grids">
+            <div class="feat-copy">
+              <span class="bubble" aria-hidden="true">B</span>
+              <h3>Storeys, gridlines and dimensions</h3>
+              <p>Hide a storey with its eye, or click its name to see it alone. Gridlines carry their bubbles, and the spacing between neighbours is dimensioned in millimetres. Level tags mark each storey’s elevation.</p>
+              <p class="spec"><span><kbd>G</kbd> gridlines</span><span><kbd>L</kbd> levels</span></p>
+            </div>
+            <figure class="feat-shot shot"><img src="img/tour-grids.webp" width="1280" height="800" loading="lazy" decoding="async" alt="The demo building in 3D with grid bubbles A to E and 1 to 4, a 6 000 mm dimension between neighbouring gridlines, and a level tag for each storey, from Foundation −1 000 to Roof +14 500."></figure>
+          </li>
+          <li class="feat" id="t-filter" data-name="Filter stack">
+            <div class="feat-copy">
+              <span class="bubble" aria-hidden="true">C</span>
+              <h3>Filter by any property</h3>
+              <p>Stack up filter steps that isolate, hide or highlight — by IFC class, type, level or any property the file carries. Ask for what is missing as well: <em>Fire Rating is empty</em> finds the walls nobody rated. Save a stack as a set and use it again.</p>
+              <p class="spec"><span>=</span><span>≠</span><span>contains</span><span>&gt;</span><span>&lt;</span><span>empty</span></p>
+            </div>
+            <figure class="feat-shot shot"><img src="img/tour-filter.webp" width="1280" height="800" loading="lazy" decoding="async" alt="The Filter card with one step, highlight IfcEntity = IfcWindow, 55 of 412 match: all 55 windows of the demo building are drawn in teal and the rest is ghosted."></figure>
+          </li>
+          <li class="feat" id="t-sections" data-name="Two section cuts">
+            <div class="feat-copy">
+              <span class="bubble" aria-hidden="true">D</span>
+              <h3>Two section cuts at once</h3>
+              <p>Cut along a gridline and at a level at the same time, each with its own offset, flip side and Clear. Everything a plane passes through is outlined in a thick accent line, so the cut reads at a glance.</p>
+              <p class="spec"><span>−500</span><span>+500</span><span>flip side</span><span>Clear all</span></p>
+            </div>
+            <figure class="feat-shot shot"><img src="img/tour-sections.webp" width="1280" height="800" loading="lazy" decoding="async" alt="The Section card with two cuts on at once, along gridline C and at level L3. Half of the demo building is cut away, and the walls, slabs and columns the two planes pass through are outlined in a thick teal line."></figure>
+          </li>
+          <li class="feat" id="t-measure" data-name="Spot levels and laser">
+            <div class="feat-copy">
+              <span class="bubble" aria-hidden="true">E</span>
+              <h3>Spot levels and laser measurements</h3>
+              <p>Click a surface with the spot tool to pin its level, like <span class="lv"><svg class="tri" width="10" height="9" aria-hidden="true"><use href="#i-tri"/></svg>+14.500</span>; click the tag for the full E, N and Z. The laser meter measures X, Y and Z from a point, snapping to corners and edges.</p>
+              <p class="spec"><span><kbd>C</kbd> spot</span><span><kbd>M</kbd> laser</span><span><kbd>S</kbd> snap</span></p>
+            </div>
+            <figure class="feat-shot shot"><img src="img/tour-measure.webp" width="1280" height="800" loading="lazy" decoding="async" alt="A spot level tag reading +14.500 on the roof of the demo building, and a laser measurement across the roof reading X 24 200 mm and Y 18 200 mm."></figure>
+          </li>
+          <li class="feat" id="t-properties" data-name="Properties">
+            <div class="feat-copy">
+              <span class="bubble" aria-hidden="true">F</span>
+              <h3>Every property, as authored</h3>
+              <p>Select an element and read what the file says about it: class, type and level, its property sets and quantities, GlobalId, material, related elements and sizes. Property and quantity values are kept as the file authored them, and type-level property sets are included.</p>
+              <p class="spec"><span>Pset</span><span>Qto</span><span>GlobalId</span></p>
+            </div>
+            <figure class="feat-shot shot"><img src="img/tour-properties.webp" width="1280" height="800" loading="lazy" decoding="async" alt="A selected wall, Ext Wall S D-E L4, with its dimensions drawn on it — 5 600, 3 300 and 200 mm — beside its property card: IfcWall, SOLIDWALL, EW 200 Brick, level L4, and the Wall Common property set."></figure>
+          </li>
+          <li class="feat" id="t-views" data-name="Viewpoints">
+            <div class="feat-copy">
+              <span class="bubble" aria-hidden="true">G</span>
+              <h3>Viewpoints and a share link</h3>
+              <p>Save a viewpoint — the camera, both section planes and everything hidden or filtered — and return to it with one click. <em>copy link to this state</em> puts an <code>sgvue://</code> link on the clipboard that reopens the same view wherever the same files are in the same place.</p>
+              <p class="spec"><span>sgvue://</span><span>double-click to rename</span></p>
+            </div>
+            <figure class="feat-shot shot"><img src="img/tour-views.webp" width="1280" height="800" loading="lazy" decoding="async" alt="The Viewpoints card with two saved views, Viewpoint 1 in 3D and Viewpoint 2 from the top, and ‘copy link to this state’, beside the demo building in plan with its grid bubbles and 6 000 mm dimensions."></figure>
+          </li>
+          <li class="feat" id="t-schedules" data-name="Schedules">
+            <div class="feat-copy">
+              <span class="bubble" aria-hidden="true">H</span>
+              <h3>Schedules, in a window of their own</h3>
+              <p>Revit-style schedules of any IFC class: choose the fields, sort, group, total, filter and add calculated columns. Click a row to select it in 3D, colour the model by a column, and export to Excel or CSV when you are done.</p>
+              <p class="spec"><span>.xlsx</span><span>.csv</span><span>templates</span></p>
+            </div>
+            <figure class="feat-shot shot"><img src="img/tour-schedules.webp" width="1280" height="800" loading="lazy" decoding="async" alt="The Schedules window: a Window Schedule of 55 windows with model, level, type and area columns, one row selected, beside the schedule setup with its Fields, Filter, Sort, Format and Style tabs."></figure>
+          </li>
+        </ol>
+        <div class="tour-stage" id="tour-stage" aria-hidden="true" hidden>
+          <div class="tour-frame shot" id="tour-frame"></div>
+          <p class="tour-cap"><span class="bubble" id="tour-key">A</span><span id="tour-name">Federation</span><span class="tour-n" id="tour-n">1 / 8</span></p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─────────────── 03 · Vee ─────────────── -->
+    <section class="sec" id="vee" data-level aria-labelledby="h-vee">
+      <header class="lvl lvl-vee">
+        <p class="lvl-tag" aria-hidden="true"><svg class="tri" width="10" height="9"><use href="#i-tri"/></svg><b>03</b><span data-elev="vee"></span></p>
+        <canvas class="vee vee-big" id="vee-big" data-vee="idle" data-cell="6" data-offset="5" width="16" height="16" aria-hidden="true"></canvas>
+        <div>
+          <p class="eyebrow">The assistant</p>
+          <h2 id="h-vee">Meet Vee.</h2>
+          <p class="sub">Ask a question in plain words and watch Vee work: it reads the models, narrows to what you asked about, checks, and answers. When it has found elements, the answer usually carries a row for each level, and a click on a row selects what it counted.</p>
+        </div>
+      </header>
+
+      <div class="vee-grid">
+        <div class="replay" id="replay">
+          <p class="replay-flag"><span class="flag">Replay</span> of the Ask Vee panel on the demo building — not a live assistant.</p>
+          <div class="rp-stage">
+            <div class="rp" id="rp">
+              <div class="rp-head">
+                <span class="rp-corner" aria-hidden="true"></span>
+                <canvas class="vee" data-vee="idle" data-cell="1.33" data-offset="5" width="16" height="16" aria-hidden="true"></canvas>
+                <span class="rp-title">Ask Vee</span>
+                <svg class="rp-x" width="14" height="14" aria-hidden="true"><use href="#i-x"/></svg>
+              </div>
+              <div class="rp-thread" id="rp-thread">
+                <div class="rp-scroll" id="rp-scroll">
+                  <div class="rp-row" data-r="boot">
+                    <p class="rp-label"><canvas class="vee" data-vee="idle" data-cell="1.2" data-offset="11" width="16" height="16" aria-hidden="true"></canvas><span>Vee</span><span class="rp-re" aria-hidden="true"><svg width="12" height="12"><use href="#i-reply"/></svg>reply</span></p>
+                    <p class="rp-bubble">4 models, 412 elements, 6 storeys. No data-completeness issues found.</p>
+                  </div>
+                  <div class="rp-row rp-you" data-r="you">
+                    <p class="rp-label" data-r="you-label"><span>You</span><span class="rp-re" aria-hidden="true"><svg width="12" height="12"><use href="#i-reply"/></svg>reply</span></p>
+                    <p class="rp-bubble rp-q" data-r="you-bubble"><span data-r="q">Which walls have no thermal transmittance?</span></p>
+                  </div>
+                  <div class="rp-row" data-r="ans">
+                    <p class="rp-label" data-r="ans-label"><canvas class="vee" id="rp-vee" data-vee="done" data-cell="1.2" data-offset="0" width="16" height="16" aria-hidden="true"></canvas><span>Vee</span><span class="rp-status"><span class="rp-think" data-r="thinking" aria-hidden="true">Thinking</span><span class="rp-done" data-r="status">checked 80 walls · 8s</span></span></p>
+                    <div class="rp-bubble rp-a" data-r="bubble">
+                      <canvas class="rp-mx" data-r="mx" width="2" height="2" aria-hidden="true"></canvas>
+                      <div class="rp-tick" data-r="ticker" aria-hidden="true"></div>
+                      <p class="rp-text" data-r="text"><strong>24 of 80 walls</strong> have no Thermal Transmittance. 12 are in <code>SB_ARC_R25</code> and 12 in <code>SB_STR_R25</code>.</p>
+                      <span class="rp-rule" data-r="rule" aria-hidden="true"></span>
+                      <ul class="rp-rows" data-r="rows">
+                        <li><span class="rp-lv">L1</span><span class="rp-cells" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span><span class="rp-n"><b>5</b> walls</span></li>
+                        <li><span class="rp-lv">L2</span><span class="rp-cells" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span><span class="rp-n"><b>5</b> walls</span></li>
+                        <li><span class="rp-lv">L3</span><span class="rp-cells" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span><span class="rp-n"><b>5</b> walls</span></li>
+                        <li><span class="rp-lv">L4</span><span class="rp-cells" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span><span class="rp-n"><b>5</b> walls</span></li>
+                        <li><span class="rp-lv">Roof</span><span class="rp-cells" aria-hidden="true"><i></i><i></i><i></i><i></i></span><span class="rp-n"><b>4</b> walls</span></li>
+                      </ul>
+                    </div>
+                    <p class="rp-chips" data-r="chip"><span class="rp-chip">24 found</span></p>
+                  </div>
+                </div>
+              </div>
+              <div class="rp-foot" aria-hidden="true">
+                <p class="rp-sugg"><span>suggestions</span></p>
+                <div class="rp-compose">
+                  <span class="rp-input" data-r="input"><span class="rp-ph" data-r="ph">How many doors on L2?</span><span class="rp-typed" data-r="typed"></span><span class="rp-caret" data-r="caret"></span></span>
+                  <span class="rp-send" data-r="send"><svg class="rp-arrow" data-r="arrow" width="18" height="18"><use href="#i-send"/></svg><span class="rp-stop" data-r="stop"></span></span>
+                </div>
+              </div>
+              <p class="rp-lift" data-r="lift" aria-hidden="true"></p>
+            </div>
+            <p class="rp-pill" aria-hidden="true"><canvas class="vee" data-vee="idle" data-cell="1.2" data-offset="17" width="16" height="16"></canvas>Ask Vee</p>
+          </div>
+
+          <div class="rp-ctl" id="rp-ctl" hidden>
+            <button type="button" class="ctl" id="rp-prev" aria-label="Previous step"><svg width="18" height="18" aria-hidden="true"><use href="#i-prev"/></svg></button>
+            <button type="button" class="ctl ctl-main" id="rp-play" aria-label="Play the replay"><svg class="ic-play" width="20" height="20" aria-hidden="true"><use href="#i-play"/></svg><svg class="ic-pause" width="20" height="20" aria-hidden="true"><use href="#i-pause"/></svg></button>
+            <button type="button" class="ctl" id="rp-next" aria-label="Next step"><svg width="18" height="18" aria-hidden="true"><use href="#i-next"/></svg></button>
+            <span class="rp-bar" aria-hidden="true"><span class="rp-fill" id="rp-fill"></span></span>
+            <span class="rp-time" id="rp-time" aria-hidden="true">0 s</span>
+          </div>
+        </div>
+
+        <div class="vee-side">
+          <h3 class="side-h">What you are watching</h3>
+          <ol class="rp-steps" id="rp-steps">
+            <li><b>Ask</b><span>You type a question in plain words: “Which walls have no thermal transmittance?”</span></li>
+            <li><b>Send</b><span>The line lifts out of the composer into the transcript, and the send button becomes a stop button.</span></li>
+            <li><b>Thinking</b><span>Vee appears beside its name. “Thinking” shimmers until the answer.</span></li>
+            <li><b>Reading</b><span>Vee reads the four models: one square for each of the 412 elements.</span></li>
+            <li><b>Filtering</b><span>It narrows to what you asked about. The 80 walls regroup; the rest drop away.</span></li>
+            <li><b>Checking</b><span>A beam scans the walls. Each one with no thermal transmittance lights up, and the count climbs to 24.</span></li>
+            <li><b>Answer</b><span>“24 of 80 walls have no Thermal Transmittance”, with its status: checked 80 walls · 8s.</span></li>
+            <li><b>Done</b><span>One row for each level that holds a match. In SGVue, clicking a row selects the walls it counts.</span></li>
+          </ol>
+          <p class="rp-now" id="rp-now" role="status" aria-live="polite"></p>
+          <p class="fine">The numbers are the demo building’s own: 4 models, 412 elements, 80 walls. The wording of a real answer is the assistant’s, and will differ.</p>
+        </div>
+      </div>
+
+      <ul class="facts">
+        <li class="fact">
+          <h3>It can do most of what you can</h3>
+          <p>Show, hide and isolate. Colour by any property. Cut sections, move the camera, save viewpoints. Build a schedule and bring up its export for you to save. Place spot levels and measurements.</p>
+        </li>
+        <li class="fact">
+          <h3>It asks first</h3>
+          <p>Anything that opens or unloads a file, copies to the clipboard, prints or deletes is only ever proposed. You see exactly what will happen, and it is your click that does it.</p>
+        </li>
+        <li class="fact">
+          <h3>Revert puts it back</h3>
+          <p>A reply that changed the view carries <em>revert</em>. It puts back what that reply changed in the view, and only that.</p>
+        </li>
+        <li class="fact">
+          <h3>It can never change your model</h3>
+          <p>Vee looks and reports. It has no tool that writes to an IFC file, and neither has anything else in SGVue.</p>
+        </li>
+        <li class="fact">
+          <h3>It runs on your own API key</h3>
+          <p>Vee needs an Anthropic API key of your own, set in SGVue’s <span class="kbd">Preferences…</span>. Your computer’s own secret store encrypts it, and SGVue never shows it again. Without a key, nothing is sent and the rest of SGVue works fully.</p>
+        </li>
+        <li class="fact">
+          <h3>What is sent when you ask</h3>
+          <p>Your question, a summary of the model’s vocabulary, a short description of the current view, and what Vee’s look-ups return. Never the IFC file. Preferences shows the exact last request under <em>Data sent to AI</em>.</p>
+        </li>
+      </ul>
+    </section>
+
+    <!-- ─────────────── 04 · private and read-only ─────────────── -->
+    <section class="sec" id="private" data-level aria-labelledby="h-private">
+      <header class="lvl">
+        <p class="lvl-tag" aria-hidden="true"><svg class="tri" width="10" height="9"><use href="#i-tri"/></svg><b>04</b><span data-elev="private"></span></p>
+        <p class="eyebrow">Private and read-only</p>
+        <h2 id="h-private">Private by construction.</h2>
+        <p class="sub">A viewer earns trust by what it cannot do. These are not settings; they are how SGVue is built.</p>
+      </header>
+
+      <div class="priv">
+        <figure class="wire">
+          <div class="wire-pc">
+            <p class="wire-tag">This computer</p>
+            <p class="wire-flow"><span class="wire-node">IFC files</span><span class="wire-arrow" aria-hidden="true"></span><span class="wire-node wire-app"><svg class="mark" width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path class="o" d="M12 2.6 20.2 7.3v9.4L12 21.4 3.8 16.7V7.3z" stroke-width="1.5" stroke-linejoin="round"/><path class="v" d="M3.8 7.3 12 21.4 20.2 7.3" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round"/></svg>SGVue</span></p>
+            <p class="wire-note">opened, read and drawn here<br>never written · never uploaded</p>
+          </div>
+          <ol class="wire-out">
+            <li><span class="bubble" aria-hidden="true">1</span><p><strong>GitHub</strong> — one version check when SGVue starts.<small>No query, no body, no cookie. Nothing about your files or models.</small></p></li>
+            <li><span class="bubble" aria-hidden="true">2</span><p><strong>Anthropic</strong> — Ask Vee, and only with your own API key.<small>Your question, the model’s vocabulary, and what its look-ups return.</small></p></li>
+          </ol>
+          <figcaption>Everything that crosses the line. To view models, nothing does.</figcaption>
+        </figure>
+
+        <ul class="notes">
+          <li>
+            <h3><span class="note-n" aria-hidden="true">N1</span>It only reads</h3>
+            <p>There is no “save model”, no export to IFC and no tool that edits a name, a property or geometry. The write functions of the IFC library it reads with are switched off before a file is opened, and an automated check fails the build if any code tries to use them.</p>
+          </li>
+          <li>
+            <h3><span class="note-n" aria-hidden="true">N2</span>Your models stay on your computer</h3>
+            <p>Files are opened, parsed and drawn locally. No file is uploaded, and SGVue keeps no copy of a model: it remembers where your recent files are, not what is in them. There is no telemetry.</p>
+          </li>
+          <li>
+            <h3><span class="note-n" aria-hidden="true">N3</span>What touches the network</h3>
+            <p>To view models, nothing. When SGVue starts it asks GitHub once which version is the newest; that is an ordinary web request, so GitHub sees your IP address and which SGVue version is asking, and nothing from your files or models. Ask Vee is the only other thing, and only once you give it a key.</p>
+          </li>
+          <li>
+            <h3><span class="note-n" aria-hidden="true">N4</span>What it writes</h3>
+            <p>Its own settings, the list of your recent files, the view you last had, and what you save as you work: viewpoints, filter sets and schedule setups. These hold settings, file paths, checksums and views, never a model’s contents. A schedule export goes only where you choose in the Save dialog. No IFC file is ever modified, moved or re-saved.</p>
+          </li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- ─────────────── 05 · system requirements ─────────────── -->
+    <section class="sec" id="needs" data-level aria-labelledby="h-needs">
+      <header class="lvl">
+        <p class="lvl-tag" aria-hidden="true"><svg class="tri" width="10" height="9"><use href="#i-tri"/></svg><b>05</b><span data-elev="needs"></span></p>
+        <p class="eyebrow">System requirements</p>
+        <h2 id="h-needs">What it needs to run.</h2>
+      </header>
+
+      <div class="needs">
+        <table class="sched" id="reqs">
+          <caption>Requirement schedule</caption>
+          <thead>
+            <tr><th scope="col">Item</th><th scope="col">SGVue needs</th><th scope="col" class="pc-col" id="pc-col-h" hidden>This PC</th></tr>
+          </thead>
+          <tbody>
+            <tr data-req="os"><th scope="row">Windows</th><td>Windows 10 or 11, <span class="nb">64-bit</span>.</td><td class="pc-col" hidden></td></tr>
+            <!-- Shown only once the latest release has a disk image for a Mac; site.js words it from the files. -->
+            <tr data-req="mac" data-mac-only hidden><th scope="row">Mac</th><td data-mac-needs>macOS 13 Ventura or later.</td><td class="pc-col" hidden></td></tr>
+            <tr data-req="mem"><th scope="row">Memory</th><td>8 GB works for IFC files up to about 100 MB. 16 GB is recommended for 200 MB files, or for several models together.</td><td class="pc-col" hidden></td></tr>
+            <tr data-req="gpu"><th scope="row">Graphics</th><td>Any graphics card with WebGL2. On a PC with an NVIDIA card, SGVue uses it automatically.</td><td class="pc-col" hidden></td></tr>
+            <tr><th scope="row">Files</th><td>IFC, as <span class="kbd">.ifc</span> or <span class="kbd">.ifczip</span>, in IFC2X3, IFC4 or IFC4.3. Built for typical files of 50–200 MB; a single file larger than 600 MB is not opened.</td><td class="pc-col" hidden></td></tr>
+            <!-- `data-win-size` is the 1.2.0 installer's size, replaced by the newest Windows installer's when the
+                 release API answers; 390 MB is 1.2.0 installed on Windows. The Mac line appears with a disk image. -->
+            <tr><th scope="row">Disk</th><td><span class="ln"><span class="os-k" data-mac-only hidden>Windows</span><span>About <span class="nb" data-win-size>110 MB</span> to download, and about <span class="nb">390 MB</span> once installed.</span></span><span class="ln" data-mac-only hidden><span class="os-k">Mac</span><span>About <span class="nb" data-mac-size>—</span> to download.</span></span></td><td class="pc-col" hidden></td></tr>
+            <tr><th scope="row">Internet</th><td>Not needed to view models. Two things use it: a check for a newer version when SGVue starts, which sends nothing about your files or models, and Ask Vee — only if you set it up with your own Anthropic API key.</td><td class="pc-col" hidden></td></tr>
+          </tbody>
+        </table>
+
+        <div class="pc" id="pc">
+          <h3 id="pc-h">Will it run on this PC?</h3>
+          <p>A quick check that runs only in this browser. It sends nothing anywhere and stores nothing.</p>
+          <p class="nojs-only fine">The check needs JavaScript. Everything SGVue needs is in the schedule beside it.</p>
+          <p class="pc-go js-only"><button type="button" class="btn btn-g" id="pc-run">Check this PC</button></p>
+          <ul class="pc-rows" id="pc-rows" hidden></ul>
+          <div class="pc-out" id="pc-out" role="status" aria-live="polite"></div>
+          <p class="fine js-only" id="pc-fine">It shows what your browser reports, and a browser cannot see everything: not your free disk space, and the memory only roughly.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─────────────── 06 · install and update ─────────────── -->
+    <section class="sec" id="install" data-level aria-labelledby="h-install">
+      <header class="lvl">
+        <p class="lvl-tag" aria-hidden="true"><svg class="tri" width="10" height="9"><use href="#i-tri"/></svg><b>06</b><span data-elev="install"></span></p>
+        <p class="eyebrow">Install and update</p>
+        <h2 id="h-install">Install once, update in place.</h2>
+      </header>
+
+      <div class="inst">
+        <!-- The steps for the computer the download area picked a file for: Windows unless that is a Mac. -->
+        <ol class="steps" data-os="win">
+          <li class="step"><span class="bubble" aria-hidden="true">1</span><div><h3>Download</h3><p>Get the setup file with the <a href="#top">Download for Windows</a> button. It is one file, <span class="mono" data-rel-file>SGVue-&lt;version&gt;-setup.exe</span>.</p></div></li>
+          <li class="step"><span class="bubble" aria-hidden="true">2</span><div><h3>Run it</h3><p>The installer is not code-signed, so Windows may stop and say <strong>Windows protected your PC</strong>. Choose <strong>More info</strong>, then <strong>Run anyway</strong>.</p>
+            <figure class="sketch">
+              <div class="sketch-win" aria-hidden="true">
+                <span class="sk-line sk-w1"></span><span class="sk-line sk-w2"></span><span class="sk-line sk-w3"></span>
+                <span class="sk-a"><span class="bubble">a</span><u>More info</u></span>
+                <span class="sk-b"><span class="sk-btn">Run anyway</span><span class="bubble">b</span></span>
+              </div>
+              <figcaption>The warning, as a sketch — not a picture of Windows. <strong>More info</strong> comes first; it reveals <strong>Run anyway</strong>.</figcaption>
+            </figure>
+          </div></li>
+          <li class="step"><span class="bubble" aria-hidden="true">3</span><div><h3>Install, update or repair</h3><p>The setup wizard says which of the three it will do. It installs for your Windows account and asks for no administrator rights. Updating keeps your settings, API key, recent files and saved views.</p></div></li>
+          <li class="step"><span class="bubble" aria-hidden="true">4</span><div><h3>Stay current</h3><p>SGVue’s start page — where you open models — tells you when a newer version is out. <span class="kbd">Help › Check for updates</span> opens this page, which says whether you are up to date.</p></div></li>
+        </ol>
+        <ol class="steps" data-os="mac" hidden>
+          <li class="step"><span class="bubble" aria-hidden="true">1</span><div><h3>Download</h3><p>Get the disk image with the <a href="#top">Download for Mac</a> button. It is one file, <span class="mono" data-rel-file>SGVue-&lt;version&gt;.dmg</span>.</p></div></li>
+          <li class="step"><span class="bubble" aria-hidden="true">2</span><div><h3>Drag it into Applications</h3><p>Open the disk image from your Downloads folder. In the window that opens, drag <strong>SGVue</strong> onto <strong>Applications</strong>, then eject the disk image. To update later, do the same with the newer one and choose <strong>Replace</strong>.</p></div></li>
+          <li class="step"><span class="bubble" aria-hidden="true">3</span><div><h3>Open it the first time</h3><p>SGVue is not notarised by Apple, so the first time you open it, macOS stops and says it cannot check the app. Open <strong>System Settings</strong>, click <strong>Privacy &amp; Security</strong>, scroll down to <strong>Security</strong> and click <strong>Open Anyway</strong> — it is there for about an hour after you tried to open SGVue. Enter your login password if asked, and choose <strong>Open</strong> when the warning comes back. After that, SGVue opens like any other app.</p></div></li>
+          <li class="step"><span class="bubble" aria-hidden="true">4</span><div><h3>Stay current</h3><p>SGVue’s start page — where you open models — tells you when a newer version is out. <span class="kbd">Help › Check for updates</span> opens this page, which says whether you are up to date.</p></div></li>
+        </ol>
+
+        <div class="inst-side">
+          <div class="verify" id="verify">
+            <h3>Verify your download</h3>
+            <div data-os="win">
+              <p>Because the installer is not signed, check for yourself that the file you downloaded is the file that was published. Windows can compare the two.</p>
+              <ol class="vsteps">
+                <li>
+                  <p>Open <strong>PowerShell</strong> and paste this line.</p>
+                  <div class="code"><code id="v-cmd" data-rel-cmd>Get-FileHash "$env:USERPROFILE\Downloads\SGVue-*-setup.exe" -Algorithm SHA256 | Format-List Hash, Path</code><button type="button" class="copy js-only" data-copy="v-cmd" aria-label="Copy the PowerShell line"><svg width="15" height="15" aria-hidden="true"><use href="#i-copy"/></svg><span>Copy</span></button></div>
+                </li>
+                <li>
+                  <p data-rel-hide>It prints the file’s SHA-256. When GitHub states the published one, this page shows it here — that needs JavaScript. Compare the two by eye: all 64 characters must be the same.</p>
+                  <p data-rel-show hidden>It prints <code class="inl">True</code> when the file matches the published one, and <code class="inl">False</code> when it does not. If your download is not in Downloads, change the path.</p>
+                </li>
+              </ol>
+            </div>
+            <div data-os="mac" hidden>
+              <p>SGVue for Mac is not signed or notarised by Apple, so check for yourself that the file you downloaded is the file that was published. Your Mac can work out its SHA-256.</p>
+              <ol class="vsteps">
+                <li>
+                  <p>Open <strong>Terminal</strong> and paste this line.</p>
+                  <div class="code"><code id="v-cmd-mac"></code><button type="button" class="copy" data-copy="v-cmd-mac" aria-label="Copy the Terminal line"><svg width="15" height="15" aria-hidden="true"><use href="#i-copy"/></svg><span>Copy</span></button></div>
+                </li>
+                <li>
+                  <p data-rel-hide>It prints the file’s SHA-256, then its name. When GitHub states the published one, this page shows it here, to compare by eye: all 64 characters must be the same.</p>
+                  <p data-rel-show hidden>It prints the file’s SHA-256, then its name. Compare it with the published one below, by eye: all 64 characters must be the same. If your download is not in Downloads, change the path.</p>
+                </li>
+              </ol>
+            </div>
+            <div class="sha" data-rel-show hidden>
+              <p class="sha-k">SHA-256 of <span data-rel-file></span></p>
+              <div class="code"><code id="v-sha" data-rel-sha></code><button type="button" class="copy" data-copy="v-sha" aria-label="Copy the SHA-256"><svg width="15" height="15" aria-hidden="true"><use href="#i-copy"/></svg><span>Copy</span></button></div>
+            </div>
+            <p class="copy-say" id="copy-say" role="status" aria-live="polite"></p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─────────────── 07 · what is new ─────────────── -->
+    <section class="sec" id="new" data-level aria-labelledby="h-new">
+      <header class="lvl">
+        <p class="lvl-tag" aria-hidden="true"><svg class="tri" width="10" height="9"><use href="#i-tri"/></svg><b>07</b><span data-elev="new"></span></p>
+        <p class="eyebrow">Revisions</p>
+        <h2 id="h-new">What is new in 1.2.0.</h2>
+      </header>
+
+      <table class="sched rev">
+        <caption>Revision 1.2.0</caption>
+        <thead><tr><th scope="col">Rev</th><th scope="col">Change</th><th scope="col">Description</th></tr></thead>
+        <tbody>
+          <tr><td class="rev-n"><svg class="tri delta" width="10" height="9" aria-hidden="true"><use href="#i-tri"/></svg>1.2.0</td><th scope="row">Vee</th><td>The assistant has a name and a face. You watch it work — thinking, reading, filtering, checking — then the answer and, when it has found elements, usually a row for each level. A stop button ends a turn. It asks before anything that opens, unloads, copies, prints or deletes, and <em>revert</em> on a reply puts back everything that reply changed in the view.</td></tr>
+          <tr><td class="rev-n"><svg class="tri delta" width="10" height="9" aria-hidden="true"><use href="#i-tri"/></svg>1.2.0</td><th scope="row">Two section cuts</th><td>A gridline cut and a level cut together, each with its own offset, flip side and Clear, plus Clear all. Gridline chips are grouped by direction.</td></tr>
+          <tr><td class="rev-n"><svg class="tri delta" width="10" height="9" aria-hidden="true"><use href="#i-tri"/></svg>1.2.0</td><th scope="row">A tidier window</th><td>The toolbar is in groups, with Schedules set apart. Undo, redo and the measurement counts have a bar of their own, and the bottom edge no longer overlaps. Hover shows the full text of a clipped property and a file’s full path.</td></tr>
+          <tr><td class="rev-n"><svg class="tri delta" width="10" height="9" aria-hidden="true"><use href="#i-tri"/></svg>1.2.0</td><th scope="row">Update notice</th><td>SGVue’s start page tells you when a newer version exists, and <span class="kbd">Help › Check for updates</span> opens this page.</td></tr>
+          <tr><td class="rev-n"><svg class="tri delta" width="10" height="9" aria-hidden="true"><use href="#i-tri"/></svg>1.2.0</td><th scope="row">Fixes</th><td>The canvas grid sits at the model’s own zero level. Copy link, Copy GlobalId and the chat table’s “copy csv” now really copy.</td></tr>
+        </tbody>
+      </table>
+      <p class="after"><a class="link" href="https://github.com/sgvue/releases/releases">Every release, with its notes →</a></p>
+    </section>
+
+    <!-- ─────────────── 08 · questions ─────────────── -->
+    <section class="sec" id="faq" data-level aria-labelledby="h-faq">
+      <header class="lvl">
+        <p class="lvl-tag" aria-hidden="true"><svg class="tri" width="10" height="9"><use href="#i-tri"/></svg><b>08</b><span data-elev="faq"></span></p>
+        <p class="eyebrow">Questions people ask</p>
+        <h2 id="h-faq">Before you download.</h2>
+      </header>
+
+      <div class="faq">
+        <div class="faq-col">
+        <details class="q"><summary><span class="q-n" aria-hidden="true">Q1</span>Is it free?</summary><div class="q-a"><p>Yes. SGVue costs nothing to download or to use, and there is no account, no licence key and no trial period. The one part with a cost is Ask Vee, and that is paid to Anthropic, not to SGVue.</p></div></details>
+        <details class="q"><summary><span class="q-n" aria-hidden="true">Q2</span>Does it change or upload my models?</summary><div class="q-a"><p>No. SGVue has no way to write an IFC file, and your files are read on your own computer. No file is uploaded. If you use Ask Vee, your question and what it looks up to answer go to Anthropic under your own key — never the file itself.</p></div></details>
+        <details class="q"><summary><span class="q-n" aria-hidden="true">Q3</span>Which files does it open?</summary><div class="q-a"><p>IFC files as <span class="kbd">.ifc</span> or <span class="kbd">.ifczip</span>, in the IFC2X3, IFC4 and IFC4.3 schemas. Open one, or several together as a federation. ifcXML is not supported, and a single file larger than 600 MB is not opened.</p></div></details>
+        <details class="q"><summary><span class="q-n" aria-hidden="true">Q4</span>How big is it?</summary><div class="q-a"><p>The <span data-mac-only hidden>Windows </span>installer is about <span class="nb" data-win-size>110 MB</span>, and SGVue takes about <span class="nb">390 MB</span> once installed.<span data-mac-only hidden> The Mac disk image is about <span class="nb" data-mac-size>—</span>.</span> It is built for IFC files of 50–200 MB: 8 GB of memory works up to about 100 MB, and 16 GB is recommended for 200 MB files, or for several models together.</p></div></details>
+        <details class="q"><summary><span class="q-n" aria-hidden="true">Q5</span>Is there a Mac version?</summary><div class="q-a"><p id="q-mac">Not yet. SGVue is published for Windows 10 and 11, <span class="nb">64-bit</span>.</p></div></details>
+        </div>
+        <div class="faq-col">
+        <details class="q"><summary><span class="q-n" aria-hidden="true">Q6</span>Why does Windows warn me?</summary><div class="q-a"><p>The installer is not code-signed, so Windows cannot tell who published it and says so before it runs. Choose <strong>More info</strong>, then <strong>Run anyway</strong>. If you would like more than that, <a href="#verify">verify your download</a> first: it takes one line in PowerShell.</p></div></details>
+        <details class="q"><summary><span class="q-n" aria-hidden="true">Q7</span>How do I update?</summary><div class="q-a"><p>On Windows, download the newer setup file and run it over the old one: the wizard says <strong>Update</strong>, and your settings, API key, recent files and saved views are kept.<span data-mac-only hidden> On a Mac, drag the newer SGVue into Applications and choose <strong>Replace</strong>.</span> SGVue’s start page shows a notice when a newer version exists.</p></div></details>
+        <details class="q"><summary><span class="q-n" aria-hidden="true">Q8</span>What does Vee cost?</summary><div class="q-a"><p>SGVue charges nothing for it. Vee runs on your own Anthropic API key, so Anthropic bills your account for what you use; how much depends on the model you choose in Preferences and how much you ask. Without a key, nothing is sent and nothing is charged.</p></div></details>
+        <details class="q"><summary><span class="q-n" aria-hidden="true">Q9</span>How do I uninstall it?</summary><div class="q-a"><p>In Windows, open <span class="kbd">Settings › Apps</span>, find SGVue in the list of installed apps and choose Uninstall. The uninstaller removes the app and keeps your settings, recent files and saved views.<span data-mac-only hidden> On a Mac, drag SGVue from Applications to the Trash.</span> It never touches your IFC files.</p></div></details>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<!-- ─────────────── the title block ─────────────── -->
+<footer class="tb-wrap">
+  <div class="tb">
+    <div class="tb-c tb-proj">
+      <span class="tb-k">Project</span>
+      <p class="tb-big"><svg class="mark" width="26" height="26" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path class="o" d="M12 2.6 20.2 7.3v9.4L12 21.4 3.8 16.7V7.3z" stroke-width="1.3" stroke-linejoin="round"/><path class="o" d="M12 3.4v8.2" stroke-width="1.3" stroke-linecap="round"/><path class="v" d="M3.8 7.3 12 21.4 20.2 7.3" stroke-width="2.3" stroke-linejoin="round" stroke-linecap="round"/></svg>SGVue</p>
+      <p>Read-only IFC viewer for BIM coordination review.</p>
+    </div>
+    <div class="tb-c tb-by">
+      <span class="tb-k">Drawn by</span>
+      <p>Made by Yong Yen, an architectural professional — built with Claude.</p>
+    </div>
+    <div class="tb-c">
+      <span class="tb-k">Revision</span>
+      <p class="tb-v" data-rel-version>see <a href="https://github.com/sgvue/releases/releases">releases</a></p>
+    </div>
+    <div class="tb-c">
+      <span class="tb-k">Date</span>
+      <p class="tb-v" data-rel-date>—</p>
+    </div>
+    <div class="tb-c">
+      <span class="tb-k">Download</span>
+      <p class="tb-v" data-rel-size>—</p>
+    </div>
+    <div class="tb-c">
+      <span class="tb-k">Scale</span>
+      <p class="tb-v">1&#8239;:&#8239;1 <span class="tb-px" data-measure="sheet" aria-hidden="true"></span></p>
+    </div>
+    <div class="tb-c tb-sha">
+      <span class="tb-k">SHA-256</span>
+      <p class="tb-v" data-rel-sha-short>see <a href="#verify">verify your download</a></p>
+    </div>
+    <div class="tb-c tb-notes">
+      <span class="tb-k">Notes</span>
+      <p><a href="https://github.com/sgvue/releases/releases">Releases</a> · Fonts: IBM Plex, <a href="fonts/OFL.txt">SIL Open Font License</a> · No cookies, no tracking.</p>
+    </div>
+    <div class="tb-c tb-sheet">
+      <span class="tb-k">Sheet</span>
+      <p class="tb-no">A-001</p>
+    </div>
   </div>
 </footer>
 </body>
