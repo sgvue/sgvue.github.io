@@ -9,6 +9,8 @@
  * Every <canvas class="vee" data-vee="idle"> on the page is drawn here, at a whole number of
  * device pixels to a cell so each cell stays a crisp square. One shared clock; it stops while
  * the tab is hidden and does not run under reduced motion, where each sprite holds one frame.
+ * While it runs it sleeps between the frames at which a sprite's drawing changes, as the app's
+ * does (`veeNextWake`): an idle sprite wakes it only at the two edges of its blink.
  */
 (function () {
   'use strict';
@@ -121,17 +123,49 @@
   }
 
   var sprites = [];
-  var clock = 0;
-  var t0 = 0;
-  var timer = 0;
+  /* The clock: frames counted from wall time while it runs, held while it does not. */
+  var base = 0; // the frame it stood at when it last started counting
+  var startedAt = 0; // and when that was
+  var counting = false;
+  var timer = 0; // the one timer: set for the next frame at which some sprite's drawing changes
 
+  function clockFrame() {
+    return counting ? base + Math.floor((window.performance.now() - startedAt) / FRAME_MS) : base;
+  }
   function still() {
     return !!(S.still && S.still());
   }
-  function frameOf(sp) {
+  function frameOf(sp, clock) {
     if (sp.pin !== null) return sp.pin;
     if (still()) return sp.state === 'idle' ? sp.offset : 0;
     return sp.state === 'idle' ? clock + sp.offset : Math.max(0, clock - sp.since);
+  }
+
+  /* Every period in the drawing divides this: 28 (the blink), 12 (the dart), 16 (the rim), 14 (the pip), 8. */
+  var CYCLE = 336;
+  var gaps = {};
+  /** For each frame of one cycle of `state`: how many frames until its drawing next differs. Read
+   *  off grid() itself, as the app reads its table off veeGrid, so the two can never drift apart. */
+  function gapsOf(state) {
+    if (gaps[state]) return gaps[state];
+    var keys = [];
+    var f;
+    for (f = 0; f < CYCLE; f++) keys.push(grid(state, f).join(''));
+    var out = [];
+    for (f = 0; f < CYCLE; f++) {
+      var d = 1;
+      while (d < CYCLE && keys[(f + d) % CYCLE] === keys[f]) d++;
+      out.push(d);
+    }
+    gaps[state] = out;
+    return out;
+  }
+  /** The first clock frame after `clock` at which this sprite's drawing changes; never for a pinned one. */
+  function nextChange(sp, clock) {
+    if (sp.pin !== null) return Infinity;
+    var lead = sp.state === 'idle' ? sp.offset : -sp.since; // the frames it stands ahead of the clock
+    var f = clock + lead;
+    return f + gapsOf(sp.state)[((f % CYCLE) + CYCLE) % CYCLE] - lead;
   }
   /** Device pixels to a cell, and the canvas sized to exactly 16 of them. */
   function fit(sp) {
@@ -149,7 +183,7 @@
     sp.key = '';
   }
   function draw(sp) {
-    var g = grid(sp.state, frameOf(sp));
+    var g = grid(sp.state, frameOf(sp, clockFrame()));
     var key = g.join('');
     if (key === sp.key) return;
     sp.key = key;
@@ -170,20 +204,36 @@
   function drawAll() {
     sprites.forEach(draw);
   }
-  function tick() {
-    clock = Math.floor((Date.now() - t0) / FRAME_MS);
-    drawAll();
+  /** Sleep until the next frame at which some sprite's drawing changes. */
+  function arm() {
+    window.clearTimeout(timer);
+    timer = 0;
+    if (!counting) return;
+    var clock = clockFrame();
+    var next = Infinity;
+    sprites.forEach(function (sp) { next = Math.min(next, nextChange(sp, clock)); });
+    if (next === Infinity) return;
+    // Rounded up, as the app does: a timer cut short would wake just before its frame, find
+    // nothing changed, and have to be set again.
+    timer = window.setTimeout(wake, Math.max(0, Math.ceil(startedAt + (next - base) * FRAME_MS - window.performance.now())));
   }
-  function run() {
-    var should = sprites.length > 0 && !document.hidden && !still();
-    if (should && !timer) {
-      t0 = Date.now() - clock * FRAME_MS;
-      timer = window.setInterval(tick, FRAME_MS);
-    } else if (!should && timer) {
-      window.clearInterval(timer);
-      timer = 0;
+  function wake() {
+    timer = 0;
+    drawAll();
+    arm();
+  }
+  /** Count, or hold, whichever the page allows now — then draw, and set the timer again. */
+  function sync() {
+    var run = sprites.length > 0 && !document.hidden && !still();
+    if (run && !counting) {
+      startedAt = window.performance.now();
+      counting = true;
+    } else if (!run && counting) {
+      base = clockFrame();
+      counting = false;
     }
     drawAll();
+    arm();
   }
   function refit() {
     sprites.forEach(function (sp) {
@@ -204,7 +254,7 @@
       state: canvas.getAttribute('data-vee') || 'idle',
       offset: parseInt(canvas.getAttribute('data-offset'), 10) || 0,
       cell: parseFloat(canvas.getAttribute('data-cell')) || 1,
-      since: clock,
+      since: clockFrame(),
       pin: null,
       k: 0,
       dpr: 0,
@@ -213,6 +263,7 @@
     sprites.push(sp);
     fit(sp);
     draw(sp);
+    arm();
     return sp;
   }
 
@@ -222,33 +273,36 @@
     /** Put a sprite in a state; it then plays from that state's own first frame. */
     set: function (canvas, state) {
       var sp = find(canvas) || mount(canvas);
-      if (!sp) return;
+      if (!sp || (sp.pin === null && sp.state === state)) return;
       sp.pin = null;
       if (sp.state !== state) {
         sp.state = state;
-        sp.since = clock;
-        draw(sp);
+        sp.since = clockFrame();
       }
+      draw(sp);
+      arm();
     },
     /** Hold a sprite at one frame of one state — a replay drives its own sprite this way. */
     pin: function (canvas, state, frame) {
       var sp = find(canvas) || mount(canvas);
       if (!sp) return;
+      var was = sp.pin;
       sp.state = state;
       sp.pin = Math.max(0, Math.floor(frame));
       draw(sp);
+      if (was === null) arm(); // held now: the clock no longer wakes for it
     }
   };
 
   function start() {
     Array.prototype.forEach.call(document.querySelectorAll('canvas.vee'), mount);
-    run();
-    document.addEventListener('visibilitychange', run);
+    sync();
+    document.addEventListener('visibilitychange', sync);
     window.addEventListener('resize', refit);
     if (S.onStill) {
       S.onStill(function () {
         sprites.forEach(function (sp) { sp.key = ''; });
-        run();
+        sync();
       });
     }
     if (S.theme) {

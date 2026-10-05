@@ -64,7 +64,10 @@
   var API = 'https://api.github.com/repos/sgvue/releases/releases/latest';
   var LATEST_PAGE = 'https://github.com/sgvue/releases/releases/latest';
   var ALL_RELEASES = 'https://github.com/sgvue/releases/releases';
-  var DOWNLOAD_PREFIX = 'https://github.com/sgvue/releases/releases/download/';
+  // A file is offered only from GitHub's own download folder for these releases, as the browser
+  // reads the address — so neither `..`, `%2e%2e` nor `\` can lead out of it (downloadUrl).
+  var DOWNLOAD_ORIGIN = 'https://github.com';
+  var DOWNLOAD_PATH = '/sgvue/releases/releases/download/';
   // A release's files, by the names `npm run dist:win` / `dist:mac` give them: Windows, a Mac with
   // Apple silicon, an Intel Mac, either Mac. A name goes into a command the visitor copies, so it
   // may hold nothing but these characters; a file named otherwise is not offered.
@@ -116,11 +119,22 @@
   function own(o, k) {
     return Object.prototype.hasOwnProperty.call(o, k);
   }
+  /** A file's address as the browser reads it, normalised — or null unless it is on GitHub's own
+   *  origin (DOWNLOAD_ORIGIN), with no user name, and its path is under DOWNLOAD_PATH. */
+  function downloadUrl(u) {
+    var p = null;
+    try {
+      p = typeof u === 'string' && typeof URL === 'function' ? new URL(u) : null;
+    } catch (e) {
+      p = null;
+    }
+    return p && p.origin === DOWNLOAD_ORIGIN && !p.username && !p.password && p.pathname.indexOf(DOWNLOAD_PATH) === 0 ? p.href : null;
+  }
   /** One file of a release: { name, url, size, sha? } — only under GitHub's own download address. */
   function fileOf(a, kind) {
     if (!a || typeof a.name !== 'string' || !FILES[kind].test(a.name)) return null;
-    var url = a.browser_download_url;
-    if (typeof url !== 'string' || url.indexOf(DOWNLOAD_PREFIX) !== 0) return null;
+    var url = downloadUrl(a.browser_download_url);
+    if (!url) return null;
     var f = { name: a.name, url: url, size: typeof a.size === 'number' && a.size >= 0 ? a.size : 0 };
     // GitHub states each file's SHA-256 as `digest: "sha256:<64 hex>"`.
     var d = typeof a.digest === 'string' ? /^sha256:([0-9a-f]{64})$/.exec(a.digest) : null;
@@ -149,7 +163,7 @@
     return kinds.length > 0 && kinds.every(function (kind) {
       var f = r.files[kind];
       return own(FILES, kind) && !!f && typeof f.name === 'string' && FILES[kind].test(f.name) &&
-        typeof f.url === 'string' && f.url.indexOf(DOWNLOAD_PREFIX) === 0 && typeof f.size === 'number' && f.size >= 0 &&
+        downloadUrl(f.url) === f.url && typeof f.size === 'number' && f.size >= 0 &&
         (f.sha === undefined || (typeof f.sha === 'string' && HEX64.test(f.sha)));
     });
   }
@@ -299,7 +313,15 @@
     }
     return { kind: '', why: c.os ? 'desktop' : '' };
   }
-  S.platform = { computer: computer, choose: choose, release: release, valid: valid };
+  /**
+   * No answer from GitHub. The page keeps its own link to every file, which is labelled for Windows
+   * — except on a Mac, where that would mislead: { kind: '', why: 'unknown' } puts a note in its
+   * place, which claims nothing about what is published. null keeps the link. Pure, and tested.
+   */
+  function unanswered(c) {
+    return c.os === 'mac' ? { kind: '', why: 'unknown' } : null;
+  }
+  S.platform = { computer: computer, choose: choose, unanswered: unanswered, release: release, valid: valid };
 
   /** A WebGL context's own name for the graphics, and then the context is let go: { ok, name }. */
   function webgl(kind) {
@@ -366,10 +388,18 @@
     var pick = choose(rel.files, c);
     var kind = pick.kind || (rel.files.win ? 'win' : '');
     var file = kind ? rel.files[kind] : null;
+    var sha = file && file.sha ? file.sha : '';
     shown = { rel: rel, c: c, pick: pick, kind: kind, file: file };
     downloadArea(rel, c, pick);
     macFacts(rel.files, c);
     each('[data-os]', function (n) { n.hidden = n.getAttribute('data-os') !== (kind && kind !== 'win' ? 'mac' : 'win'); });
+    // Install step 1 points at the Windows button, or — with no setup file in the release — at the releases page.
+    each('[data-win-file]', function (n) { n.hidden = !rel.files.win; });
+    each('[data-win-none]', function (n) { n.hidden = !!rel.files.win; });
+    // GitHub has answered: the verify card shows the published SHA-256, or says it has none to compare with.
+    each('[data-rel-hide]', function (n) { n.hidden = true; });
+    each('[data-rel-show]', function (n) { n.hidden = !sha; });
+    each('[data-rel-none]', function (n) { n.hidden = !!sha; });
     setText('[data-rel-version]', rel.v);
     if (rel.date) setText('[data-rel-date]', rel.date);
     if (rel.files.win && rel.files.win.size) setText('[data-win-size]', megabytes(rel.files.win.size));
@@ -378,15 +408,14 @@
     setText('[data-rel-file]', file.name);
     var cmd = byId(kind === 'win' ? 'v-cmd' : 'v-cmd-mac');
     if (cmd) cmd.textContent = kind === 'win' ? winCommand(file) : macCommand(file);
-    if (file.sha) {
-      setText('[data-rel-sha]', file.sha);
-      setText('[data-rel-sha-short]', file.sha.slice(0, 16) + '…' + file.sha.slice(-8));
-      each('[data-rel-show]', function (n) { n.hidden = false; });
-      each('[data-rel-hide]', function (n) { n.hidden = true; });
+    if (sha) {
+      setText('[data-rel-sha]', sha);
+      setText('[data-rel-sha-short]', sha.slice(0, 16) + '…' + sha.slice(-8));
     }
   }
 
-  /** The hero's button, the bar's, the version line under them, and the one or two lines in between. */
+  /** The hero's button, the bar's, the version line under them, and the one or two lines in between.
+   *  `rel` is null for unanswered()'s note, which reads nothing from it. */
   function downloadArea(rel, c, pick) {
     var cta = byId('cta');
     var note = byId('dl-note');
@@ -417,6 +446,7 @@
           : pick.want === 'x64' ? 'SGVue for Intel Macs is not published yet.'
           : 'SGVue for Mac is not published yet.'
         : pick.why === 'win' ? 'The latest release has no installer for Windows.'
+        : pick.why === 'unknown' ? 'Whether there is a download for a Mac could not be checked just now.'
         : 'SGVue is a desktop app, published for ' + systems(rel.files) + '.';
       note.appendChild(el('strong', null, lead));
       note.appendChild(doc.createTextNode(' Every published version is on the '));
@@ -1086,13 +1116,16 @@
     if (have) banner('wait', have);
     ready = Promise.all([latest(), readSignals()]).then(function (got) {
       var r = got[0];
-      // Without an answer from GitHub nothing is offered but the page's own link to every file.
-      if (r) showRelease(r, computer(got[1]));
+      var c = computer(got[1]);
+      // Without an answer from GitHub nothing is offered but the page's own link to every file —
+      // and on a Mac not even that: a note says what could not be checked (unanswered()).
+      if (r) showRelease(r, c);
+      else if (unanswered(c)) downloadArea(null, c, unanswered(c));
       if (have) {
         if (!r) banner('unknown', have);
         else {
-          var c = compare(parse(have), parse(r.v));
-          banner(c < 0 ? 'update' : 'ok', have, r, c > 0);
+          var cmp = compare(parse(have), parse(r.v));
+          banner(cmp < 0 ? 'update' : 'ok', have, r, cmp > 0);
         }
       }
       remeasure();

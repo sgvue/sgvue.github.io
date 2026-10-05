@@ -383,7 +383,6 @@ h1 em{font-style:italic;color:var(--accent-ink)}
 .rp-cells{display:flex;gap:3px}
 .rp-cells i{width:8px;height:8px;border-radius:2px;background:var(--accent)}
 .rp.is-live .rp-cells i{visibility:hidden}
-.rp.is-live .rp-cells.is-set i{visibility:visible}
 .rp-n{margin-left:auto;color:var(--muted)}
 .rp-n b{font-weight:400;color:var(--ink)}
 .rp-chips{margin-top:8px}

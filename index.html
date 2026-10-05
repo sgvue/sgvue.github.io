@@ -6,7 +6,7 @@
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'; font-src 'self'; connect-src https://api.github.com; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
 <title>SGVue — read-only IFC viewer for BIM coordination review</title>
-<meta name="description" content="SGVue is a read-only IFC viewer for Windows. Open several models as one federation, walk the storeys and grids, cut sections, build schedules and ask questions. Your models stay on your computer.">
+<meta name="description" content="SGVue is an open-source, read-only IFC viewer for Windows. Open several models as one federation, walk the storeys and grids, cut sections, build schedules and ask questions. Your models stay on your computer.">
 <meta name="author" content="Yong Yen">
 <meta name="theme-color" content="#F4F7F6" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#0F1516" media="(prefers-color-scheme: dark)">
@@ -101,14 +101,14 @@
         <div class="hero-side">
           <p class="lede">SGVue is a read-only IFC viewer for BIM coordination review. Open several models as one federation, walk the storeys and grids, cut sections, build schedules and ask questions in plain words. Your models stay on your computer.</p>
           <!-- Without JavaScript, or without an answer from GitHub, the button is a plain link to the
-               latest release's page (all its files). With both, site.js points it at the one file
-               for this computer, or puts a note in its place (dl-note). -->
+               latest release's page (all its files) — except on a Mac, where a note takes its place.
+               With both, site.js points it at the one file for this computer, or puts a note in its
+               place (dl-note); the one quiet link under it is site.js's "Other downloads" (dl-sub). -->
           <div class="cta" id="cta">
             <a class="btn" data-download href="https://github.com/sgvue/releases/releases/latest">
               <svg width="18" height="18" aria-hidden="true"><use href="#i-dl"/></svg>
               <span data-dl-label>Download for Windows</span>
             </a>
-            <a class="link" href="https://github.com/sgvue/releases/releases">All releases →</a>
           </div>
           <p class="dl-note" id="dl-note" hidden></p>
           <p class="dl-sub" id="dl-sub" hidden></p>
@@ -381,7 +381,7 @@
         <p class="lvl-tag" aria-hidden="true"><svg class="tri" width="10" height="9"><use href="#i-tri"/></svg><b>04</b><span data-elev="private"></span></p>
         <p class="eyebrow">Private and read-only</p>
         <h2 id="h-private">Private by construction.</h2>
-        <p class="sub">A viewer earns trust by what it cannot do. These are not settings; they are how SGVue is built.</p>
+        <p class="sub">A viewer earns trust by what it cannot do. These are not settings; they are how SGVue is built. The code that makes these promises is public: <a href="https://github.com/sgvue/sgvue">SGVue’s source on GitHub</a>.</p>
       </header>
 
       <div class="priv">
@@ -470,7 +470,8 @@
       <div class="inst">
         <!-- The steps for the computer the download area picked a file for: Windows unless that is a Mac. -->
         <ol class="steps" data-os="win">
-          <li class="step"><span class="bubble" aria-hidden="true">1</span><div><h3>Download</h3><p>Get the setup file with the <a href="#top">Download for Windows</a> button. It is one file, <span class="mono" data-rel-file>SGVue-&lt;version&gt;-setup.exe</span>.</p></div></li>
+          <!-- `data-win-none`: shown instead when the latest release has no setup file, so there is no Windows button to point at. -->
+          <li class="step"><span class="bubble" aria-hidden="true">1</span><div><h3>Download</h3><p data-win-file>Get the setup file with the <a href="#top">Download for Windows</a> button. It is one file, <span class="mono" data-rel-file>SGVue-&lt;version&gt;-setup.exe</span>.</p><p data-win-none hidden>The latest release has no installer for Windows. Every published version is on the <a href="https://github.com/sgvue/releases/releases">releases page</a>.</p></div></li>
           <li class="step"><span class="bubble" aria-hidden="true">2</span><div><h3>Run it</h3><p>The installer is not code-signed, so Windows may stop and say <strong>Windows protected your PC</strong>. Choose <strong>More info</strong>, then <strong>Run anyway</strong>.</p>
             <figure class="sketch">
               <div class="sketch-win" aria-hidden="true">
@@ -495,7 +496,7 @@
           <div class="verify" id="verify">
             <h3>Verify your download</h3>
             <div data-os="win">
-              <p>Because the installer is not signed, check for yourself that the file you downloaded is the file that was published. Windows can compare the two.</p>
+              <p>Because the installer is not signed, check for yourself that the file you downloaded is the file that was published. Windows can work out its SHA-256.</p>
               <ol class="vsteps">
                 <li>
                   <p>Open <strong>PowerShell</strong> and paste this line.</p>
@@ -504,19 +505,21 @@
                 <li>
                   <p data-rel-hide>It prints the file’s SHA-256. When GitHub states the published one, this page shows it here — that needs JavaScript. Compare the two by eye: all 64 characters must be the same.</p>
                   <p data-rel-show hidden>It prints <code class="inl">True</code> when the file matches the published one, and <code class="inl">False</code> when it does not. If your download is not in Downloads, change the path.</p>
+                  <!-- GitHub answered, but stated no SHA-256 for the file shown (or there is no Windows file). -->
+                  <p data-rel-none hidden>It prints the file’s SHA-256. GitHub has not stated the published one, so this page has nothing to compare it with.</p>
                 </li>
               </ol>
             </div>
             <div data-os="mac" hidden>
-              <p>SGVue for Mac is not signed or notarised by Apple, so check for yourself that the file you downloaded is the file that was published. Your Mac can work out its SHA-256.</p>
+              <p>SGVue for Mac is not notarised by Apple, so check for yourself that the file you downloaded is the file that was published. Your Mac can work out its SHA-256.</p>
               <ol class="vsteps">
                 <li>
                   <p>Open <strong>Terminal</strong> and paste this line.</p>
                   <div class="code"><code id="v-cmd-mac"></code><button type="button" class="copy" data-copy="v-cmd-mac" aria-label="Copy the Terminal line"><svg width="15" height="15" aria-hidden="true"><use href="#i-copy"/></svg><span>Copy</span></button></div>
                 </li>
                 <li>
-                  <p data-rel-hide>It prints the file’s SHA-256, then its name. When GitHub states the published one, this page shows it here, to compare by eye: all 64 characters must be the same.</p>
                   <p data-rel-show hidden>It prints the file’s SHA-256, then its name. Compare it with the published one below, by eye: all 64 characters must be the same. If your download is not in Downloads, change the path.</p>
+                  <p data-rel-none hidden>It prints the file’s SHA-256, then its name. GitHub has not stated the published one, so this page has nothing to compare it with.</p>
                 </li>
               </ol>
             </div>
@@ -573,6 +576,7 @@
         <details class="q"><summary><span class="q-n" aria-hidden="true">Q7</span>How do I update?</summary><div class="q-a"><p>On Windows, download the newer setup file and run it over the old one: the wizard says <strong>Update</strong>, and your settings, API key, recent files and saved views are kept.<span data-mac-only hidden> On a Mac, drag the newer SGVue into Applications and choose <strong>Replace</strong>.</span> SGVue’s start page shows a notice when a newer version exists.</p></div></details>
         <details class="q"><summary><span class="q-n" aria-hidden="true">Q8</span>What does Vee cost?</summary><div class="q-a"><p>SGVue charges nothing for it. Vee runs on your own Anthropic API key, so Anthropic bills your account for what you use; how much depends on the model you choose in Preferences and how much you ask. Without a key, nothing is sent and nothing is charged.</p></div></details>
         <details class="q"><summary><span class="q-n" aria-hidden="true">Q9</span>How do I uninstall it?</summary><div class="q-a"><p>In Windows, open <span class="kbd">Settings › Apps</span>, find SGVue in the list of installed apps and choose Uninstall. The uninstaller removes the app and keeps your settings, recent files and saved views.<span data-mac-only hidden> On a Mac, drag SGVue from Applications to the Trash.</span> It never touches your IFC files.</p></div></details>
+        <details class="q"><summary><span class="q-n" aria-hidden="true">Q10</span>Is SGVue open source?</summary><div class="q-a"><p>Yes. Its source code is public on GitHub, at <a href="https://github.com/sgvue/sgvue">github.com/sgvue/sgvue</a>, under the <a href="https://github.com/sgvue/sgvue/blob/main/LICENSE">Apache License 2.0</a>. The licence grants no right to use the name SGVue or its logo.</p></div></details>
         </div>
       </div>
     </section>
@@ -613,7 +617,7 @@
     </div>
     <div class="tb-c tb-notes">
       <span class="tb-k">Notes</span>
-      <p><a href="https://github.com/sgvue/releases/releases">Releases</a> · Fonts: IBM Plex, <a href="fonts/OFL.txt">SIL Open Font License</a> · No cookies, no tracking.</p>
+      <p><a href="https://github.com/sgvue/sgvue">Source code on GitHub</a>, <a href="https://github.com/sgvue/sgvue/blob/main/LICENSE">Apache License 2.0</a> · <a href="https://github.com/sgvue/releases/releases">Releases</a> · Fonts: IBM Plex, <a href="fonts/OFL.txt">SIL Open Font License</a> · No cookies, no tracking.</p>
     </div>
     <div class="tb-c tb-sheet">
       <span class="tb-k">Sheet</span>
